@@ -1,0 +1,16 @@
+{
+    "name": "storyroom/api",
+    "description": "绘本馆活动管理系统后端API",
+    "type": "project",
+    "require": {
+        "php": ">=8.0",
+        "ext-pdo": "*",
+        "ext-json": "*",
+        "vlucas/phpdotenv": "^5.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "StoryRoom\\": "src/"
+        }
+    }
+}
