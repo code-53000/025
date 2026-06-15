@@ -5,6 +5,8 @@ import ActivityDetail from './pages/ActivityDetail'
 import ActivityCreate from './pages/ActivityCreate'
 import ChildList from './pages/ChildList'
 import ChildCreate from './pages/ChildCreate'
+import ParentList from './pages/ParentList'
+import ParentCreate from './pages/ParentCreate'
 import AttendancePage from './pages/AttendancePage'
 import './styles/index.css'
 
@@ -28,6 +30,9 @@ function App() {
               <NavLink to="/activities/create" className="nav-link">
                 发布活动
               </NavLink>
+              <NavLink to="/parents" className="nav-link">
+                家长管理
+              </NavLink>
               <NavLink to="/children" className="nav-link">
                 孩子档案
               </NavLink>
@@ -42,6 +47,8 @@ function App() {
               <Route path="/activities/create" element={<ActivityCreate />} />
               <Route path="/activities/:id" element={<ActivityDetail />} />
               <Route path="/activities/:id/attendance" element={<AttendancePage />} />
+              <Route path="/parents" element={<ParentList />} />
+              <Route path="/parents/create" element={<ParentCreate />} />
               <Route path="/children" element={<ChildList />} />
               <Route path="/children/create" element={<ChildCreate />} />
             </Routes>

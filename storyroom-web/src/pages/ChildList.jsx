@@ -1,20 +1,41 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getChildren, deleteChild } from '../services/api'
+import { getChildren, deleteChild, getParents } from '../services/api'
 
 export default function ChildList() {
   const [children, setChildren] = useState([])
+  const [parents, setParents] = useState([])
+  const [selectedParentId, setSelectedParentId] = useState('')
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState({ type: '', text: '' })
 
   useEffect(() => {
-    loadChildren()
+    loadParents()
   }, [])
+
+  useEffect(() => {
+    loadChildren()
+  }, [selectedParentId])
+
+  const loadParents = async () => {
+    try {
+      const res = await getParents({ page_size: 100 })
+      if (res.code === 200) {
+        setParents(res.data.items || [])
+      }
+    } catch (err) {
+      console.error('加载家长列表失败', err)
+    }
+  }
 
   const loadChildren = async () => {
     try {
       setLoading(true)
-      const res = await getChildren({ parent_id: 1, page_size: 100 })
+      const params = { page_size: 100 }
+      if (selectedParentId) {
+        params.parent_id = selectedParentId
+      }
+      const res = await getChildren(params)
       if (res.code === 200) {
         setChildren(res.data.items || [])
       }
@@ -56,6 +77,26 @@ export default function ChildList() {
           + 添加孩子
         </Link>
       </div>
+
+      {parents.length > 0 && (
+        <div className="card">
+          <div className="filter-group">
+            <span style={{ fontSize: '14px', color: '#666' }}>筛选家长：</span>
+            <select
+              className="filter-select"
+              value={selectedParentId}
+              onChange={(e) => setSelectedParentId(e.target.value)}
+            >
+              <option value="">全部家长</option>
+              {parents.map((parent) => (
+                <option key={parent.id} value={parent.id}>
+                  {parent.name}（{parent.phone}）
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
 
       {message.text && (
         <div className={`alert alert-${message.type}`}>{message.text}</div>

@@ -214,3 +214,14 @@ ON DUPLICATE KEY UPDATE name = VALUES(name);
 INSERT INTO staff (username, password, name, phone, role) VALUES
 ('admin', '$2y$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '管理员', '13800138000', 'admin')
 ON DUPLICATE KEY UPDATE username = VALUES(username);
+
+-- 初始化默认家长（用于测试）
+INSERT INTO parents (name, phone) VALUES
+('张家长', '13900139000')
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+-- 初始化默认孩子档案（用于测试）
+INSERT INTO children (parent_id, name, gender, birthday, notes) VALUES
+(1, '小明', 'boy', '2020-05-15', '活泼好动，喜欢听故事'),
+(1, '小红', 'girl', '2021-08-20', '安静内向，喜欢画画')
+ON DUPLICATE KEY UPDATE name = VALUES(name);

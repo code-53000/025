@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { createChild, getParents } from '../services/api'
 
 export default function ChildCreate() {
   const navigate = useNavigate()
+  const [parents, setParents] = useState([])
   const [formData, setFormData] = useState({
-    parent_id: 1,
+    parent_id: '',
     name: '',
     gender: 'unknown',
     birthday: '',
@@ -13,6 +14,21 @@ export default function ChildCreate() {
   })
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
+
+  useEffect(() => {
+    loadParents()
+  }, [])
+
+  const loadParents = async () => {
+    try {
+      const res = await getParents({ page_size: 100 })
+      if (res.code === 200) {
+        setParents(res.data.items || [])
+      }
+    } catch (err) {
+      console.error('加载家长列表失败', err)
+    }
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -27,6 +43,10 @@ export default function ChildCreate() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
+    if (!formData.parent_id) {
+      showMessage('error', '请选择家长')
+      return
+    }
     if (!formData.name) {
       showMessage('error', '请输入孩子姓名')
       return
@@ -67,6 +87,34 @@ export default function ChildCreate() {
 
       <div className="card">
         <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">家长 *</label>
+            {parents.length === 0 ? (
+              <div>
+                <p style={{ color: '#999', marginBottom: '8px', fontSize: '14px' }}>
+                  还没有家长信息，请先添加家长
+                </p>
+                <Link to="/parents/create" className="btn btn-default btn-sm">
+                  + 添加家长
+                </Link>
+              </div>
+            ) : (
+              <select
+                name="parent_id"
+                className="form-select"
+                value={formData.parent_id}
+                onChange={handleChange}
+              >
+                <option value="">请选择家长</option>
+                {parents.map((parent) => (
+                  <option key={parent.id} value={parent.id}>
+                    {parent.name}（{parent.phone}）
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
           <div className="form-group">
             <label className="form-label">孩子姓名 *</label>
             <input

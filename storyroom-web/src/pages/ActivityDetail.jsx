@@ -6,6 +6,7 @@ import {
   getActivityAttendances,
   getActivityFeedbacks,
   getChildren,
+  getParents,
   createRegistration,
   cancelRegistration,
   publishActivity,
@@ -19,7 +20,9 @@ export default function ActivityDetail() {
   const [registrations, setRegistrations] = useState([])
   const [attendances, setAttendances] = useState([])
   const [feedbacks, setFeedbacks] = useState([])
+  const [parents, setParents] = useState([])
   const [children, setChildren] = useState([])
+  const [selectedParent, setSelectedParent] = useState('')
   const [selectedChild, setSelectedChild] = useState('')
   const [activeTab, setActiveTab] = useState('info')
   const [loading, setLoading] = useState(true)
@@ -27,7 +30,39 @@ export default function ActivityDetail() {
 
   useEffect(() => {
     loadData()
+    loadParents()
   }, [id])
+
+  useEffect(() => {
+    if (selectedParent) {
+      loadChildrenByParent(selectedParent)
+    } else {
+      setChildren([])
+      setSelectedChild('')
+    }
+  }, [selectedParent])
+
+  const loadParents = async () => {
+    try {
+      const res = await getParents({ page_size: 100 })
+      if (res.code === 200) {
+        setParents(res.data.items || [])
+      }
+    } catch (err) {
+      console.error('加载家长列表失败', err)
+    }
+  }
+
+  const loadChildrenByParent = async (parentId) => {
+    try {
+      const res = await getChildren({ parent_id: parentId, page_size: 100 })
+      if (res.code === 200) {
+        setChildren(res.data.items || [])
+      }
+    } catch (err) {
+      console.error('加载孩子列表失败', err)
+    }
+  }
 
   const loadData = async () => {
     try {
@@ -50,11 +85,6 @@ export default function ActivityDetail() {
       const fbRes = await getActivityFeedbacks(id)
       if (fbRes.code === 200) {
         setFeedbacks(fbRes.data || [])
-      }
-
-      const childrenRes = await getChildren({ parent_id: 1, page_size: 100 })
-      if (childrenRes.code === 200) {
-        setChildren(childrenRes.data.items || [])
       }
     } catch (err) {
       console.error('加载数据失败', err)
@@ -411,40 +441,73 @@ export default function ActivityDetail() {
         <div className="detail-sidebar">
           <div className="card">
             <h3 className="section-title">快速报名</h3>
-            {children.length > 0 ? (
+            {parents.length === 0 ? (
+              <div>
+                <p style={{ color: '#999', marginBottom: '12px' }}>
+                  还没有家长信息
+                </p>
+                <Link to="/parents/create" className="btn btn-primary btn-block">
+                  添加家长
+                </Link>
+              </div>
+            ) : (
               <>
                 <div className="form-group">
-                  <label className="form-label">选择孩子</label>
+                  <label className="form-label">选择家长</label>
                   <select
                     className="form-select"
-                    value={selectedChild}
-                    onChange={(e) => setSelectedChild(e.target.value)}
+                    value={selectedParent}
+                    onChange={(e) => setSelectedParent(e.target.value)}
                   >
-                    <option value="">请选择</option>
-                    {children.map((child) => (
-                      <option key={child.id} value={child.id}>
-                        {child.name}（{child.age}岁）
+                    <option value="">请选择家长</option>
+                    {parents.map((parent) => (
+                      <option key={parent.id} value={parent.id}>
+                        {parent.name}（{parent.phone}）
                       </option>
                     ))}
                   </select>
                 </div>
-                <button
-                  className="btn btn-primary btn-block"
-                  onClick={handleRegister}
-                  disabled={activity.status !== 'published'}
-                >
-                  {activity.status === 'published' ? '立即报名' : '活动未发布'}
-                </button>
+                {selectedParent && (
+                  children.length > 0 ? (
+                    <>
+                      <div className="form-group">
+                        <label className="form-label">选择孩子</label>
+                        <select
+                          className="form-select"
+                          value={selectedChild}
+                          onChange={(e) => setSelectedChild(e.target.value)}
+                        >
+                          <option value="">请选择</option>
+                          {children.map((child) => (
+                            <option key={child.id} value={child.id}>
+                              {child.name}（{child.age}岁）
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        className="btn btn-primary btn-block"
+                        onClick={handleRegister}
+                        disabled={activity.status !== 'published'}
+                      >
+                        {activity.status === 'published' ? '立即报名' : '活动未发布'}
+                      </button>
+                    </>
+                  ) : (
+                    <div>
+                      <p style={{ color: '#999', marginBottom: '12px' }}>
+                        该家长还没有添加孩子档案
+                      </p>
+                      <Link
+                        to="/children/create"
+                        className="btn btn-primary btn-block"
+                      >
+                        添加孩子档案
+                      </Link>
+                    </div>
+                  )
+                )}
               </>
-            ) : (
-              <div>
-                <p style={{ color: '#999', marginBottom: '12px' }}>
-                  您还没有添加孩子档案
-                </p>
-                <Link to="/children/create" className="btn btn-primary btn-block">
-                  添加孩子档案
-                </Link>
-              </div>
             )}
           </div>
 

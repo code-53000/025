@@ -53,6 +53,11 @@ export default function ActivityCreate() {
     setTimeout(() => setMessage({ type: '', text: '' }), 3000)
   }
 
+  const formatDateTime = (value) => {
+    if (!value) return ''
+    return value.replace('T', ' ') + ':00'
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
 
@@ -92,6 +97,8 @@ export default function ActivityCreate() {
         activity_type_id: parseInt(formData.activity_type_id),
         age_group_id: parseInt(formData.age_group_id),
         max_participants: parseInt(formData.max_participants),
+        start_time: formatDateTime(formData.start_time),
+        end_time: formatDateTime(formData.end_time),
       })
       if (res.code === 201 || res.code === 200) {
         showMessage('success', '创建成功')

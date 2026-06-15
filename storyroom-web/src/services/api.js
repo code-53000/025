@@ -80,12 +80,20 @@ export const getParents = (params = {}) => {
   return request.get('/parents', { params })
 }
 
+export const getParent = (id) => {
+  return request.get(`/parents/${id}`)
+}
+
 export const createParent = (data) => {
   return request.post('/parents', data)
 }
 
 export const updateParent = (id, data) => {
   return request.put(`/parents/${id}`, data)
+}
+
+export const deleteParent = (id) => {
+  return request.delete(`/parents/${id}`)
 }
 
 export const getActivityFeedbacks = (activityId) => {
