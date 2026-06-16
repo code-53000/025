@@ -4,6 +4,8 @@ CREATE DATABASE IF NOT EXISTS storyroom CHARACTER SET utf8mb4 COLLATE utf8mb4_un
 
 USE storyroom;
 
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- 活动类型表
 CREATE TABLE IF NOT EXISTS activity_types (
     id INT AUTO_INCREMENT PRIMARY KEY,
