@@ -2,7 +2,9 @@
 
 namespace StoryRoom\Services;
 
+use StoryRoom\Core\Database;
 use StoryRoom\Models\ParentUser;
+use StoryRoom\Models\Registration;
 
 class ParentService
 {
@@ -68,7 +70,44 @@ class ParentService
             throw new \Exception('家长用户不存在');
         }
 
-        return $parent->delete();
+        Database::beginTransaction();
+
+        try {
+            $children = $parent->children();
+            $activityIdsToPromote = [];
+            $activityIdsToReorder = [];
+
+            foreach ($children as $child) {
+                $registrations = Registration::where(['child_id' => $child->id]);
+                foreach ($registrations as $registration) {
+                    if ($registration->status === 'registered') {
+                        $activityIdsToPromote[$registration->activity_id] = true;
+                    } elseif ($registration->status === 'waitlisted') {
+                        $activityIdsToReorder[$registration->activity_id] = true;
+                    }
+                }
+            }
+
+            $parent->delete();
+
+            $registrationService = new RegistrationService();
+            foreach (array_keys($activityIdsToPromote) as $activityId) {
+                $registrationService->promoteWaitlisted($activityId);
+            }
+
+            foreach (array_keys($activityIdsToReorder) as $activityId) {
+                if (!isset($activityIdsToPromote[$activityId])) {
+                    $registrationService->reorderWaitlist($activityId);
+                }
+            }
+
+            Database::commit();
+
+            return true;
+        } catch (\Exception $e) {
+            Database::rollBack();
+            throw $e;
+        }
     }
 
     private function validateParentData(array $data): void

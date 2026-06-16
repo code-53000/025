@@ -194,7 +194,7 @@ class RegistrationService
         }
     }
 
-    private function reorderWaitlist(int $activityId): void
+    public function reorderWaitlist(int $activityId): void
     {
         $table = Registration::$table;
         $sql = "SELECT id FROM $table WHERE activity_id = ? AND status = 'waitlisted' ORDER BY waitlist_position ASC";
