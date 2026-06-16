@@ -216,4 +216,9 @@ abstract class Model
         $stmt = Database::getConnection()->prepare($sql);
         return $stmt->execute([$id]);
     }
+
+    public static function getTableName(): string
+    {
+        return static::$table;
+    }
 }

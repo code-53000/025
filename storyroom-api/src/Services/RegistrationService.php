@@ -196,7 +196,7 @@ class RegistrationService
 
     public function reorderWaitlist(int $activityId): void
     {
-        $table = Registration::$table;
+        $table = Registration::getTableName();
         $sql = "SELECT id FROM $table WHERE activity_id = ? AND status = 'waitlisted' ORDER BY waitlist_position ASC";
         $stmt = Database::getConnection()->prepare($sql);
         $stmt->execute([$activityId]);
