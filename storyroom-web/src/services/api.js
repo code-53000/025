@@ -128,6 +128,22 @@ export const createMaterialUsage = (data) => {
   return request.post('/material-usage', data)
 }
 
+export const getActivityMaterials = (activityId) => {
+  return request.get('/activity-materials', { params: { activity_id: activityId } })
+}
+
+export const createActivityMaterial = (data) => {
+  return request.post('/activity-materials', data)
+}
+
+export const updateActivityMaterial = (id, data) => {
+  return request.put(`/activity-materials/${id}`, data)
+}
+
+export const deleteActivityMaterial = (id) => {
+  return request.delete(`/activity-materials/${id}`)
+}
+
 export const login = (data) => {
   return request.post('/auth/login', data)
 }

@@ -20,7 +20,10 @@ class ActivityService
         }
 
         $result = Activity::paginate($page, $pageSize, $conditions);
-        $items = array_map(fn($activity) => $activity->withDetails(), $result['items']);
+        $items = array_map(function ($activity) {
+            $this->autoUpdateStatus($activity);
+            return $activity->withDetails();
+        }, $result['items']);
 
         return [
             'items' => $items,
@@ -33,7 +36,22 @@ class ActivityService
     public function getById(int $id): ?array
     {
         $activity = Activity::find($id);
-        return $activity ? $activity->withDetails() : null;
+        if (!$activity) {
+            return null;
+        }
+        $this->autoUpdateStatus($activity);
+        return $activity->withDetails();
+    }
+
+    private function autoUpdateStatus(Activity $activity): void
+    {
+        $now = new \DateTime();
+        $endTime = \DateTime::createFromFormat('Y-m-d H:i:s', $activity->end_time);
+
+        if ($activity->status === 'published' && $endTime && $now >= $endTime) {
+            $activity->status = 'completed';
+            $activity->save();
+        }
     }
 
     public function create(array $data): array

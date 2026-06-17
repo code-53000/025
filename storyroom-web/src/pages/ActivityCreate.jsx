@@ -1,11 +1,22 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createActivity, getActivityTypes, getAgeGroups } from '../services/api'
+import {
+  createActivity,
+  getActivityTypes,
+  getAgeGroups,
+  getMaterials,
+  createActivityMaterial,
+} from '../services/api'
 
 export default function ActivityCreate() {
   const navigate = useNavigate()
   const [activityTypes, setActivityTypes] = useState([])
   const [ageGroups, setAgeGroups] = useState([])
+  const [materials, setMaterials] = useState([])
+  const [activityMaterials, setActivityMaterials] = useState([])
+  const [selectedMaterialId, setSelectedMaterialId] = useState('')
+  const [quantityPerChild, setQuantityPerChild] = useState('1')
+  const [materialNotes, setMaterialNotes] = useState('')
   const [formData, setFormData] = useState({
     title: '',
     activity_type_id: '',
@@ -28,9 +39,10 @@ export default function ActivityCreate() {
 
   const loadOptions = async () => {
     try {
-      const [typeRes, ageRes] = await Promise.all([
+      const [typeRes, ageRes, matRes] = await Promise.all([
         getActivityTypes(),
         getAgeGroups(),
+        getMaterials({ page_size: 100 }),
       ])
       if (typeRes.code === 200) {
         setActivityTypes(typeRes.data || [])
@@ -38,9 +50,51 @@ export default function ActivityCreate() {
       if (ageRes.code === 200) {
         setAgeGroups(ageRes.data || [])
       }
+      if (matRes.code === 200) {
+        setMaterials(matRes.data.items || [])
+      }
     } catch (err) {
       console.error('加载选项失败', err)
     }
+  }
+
+  const handleAddMaterial = () => {
+    if (!selectedMaterialId) {
+      showMessage('error', '请选择材料')
+      return
+    }
+    if (!quantityPerChild || parseInt(quantityPerChild) <= 0) {
+      showMessage('error', '请输入正确的每人用量')
+      return
+    }
+
+    const existing = activityMaterials.find(
+      (m) => m.material_id === parseInt(selectedMaterialId)
+    )
+    if (existing) {
+      showMessage('error', '该材料已添加')
+      return
+    }
+
+    const material = materials.find((m) => m.id === parseInt(selectedMaterialId))
+    setActivityMaterials((prev) => [
+      ...prev,
+      {
+        material_id: parseInt(selectedMaterialId),
+        material: material,
+        quantity_per_child: parseInt(quantityPerChild),
+        notes: materialNotes,
+      },
+    ])
+    setSelectedMaterialId('')
+    setQuantityPerChild('1')
+    setMaterialNotes('')
+  }
+
+  const handleRemoveMaterial = (materialId) => {
+    setActivityMaterials((prev) =>
+      prev.filter((m) => m.material_id !== materialId)
+    )
   }
 
   const handleChange = (e) => {
@@ -101,9 +155,22 @@ export default function ActivityCreate() {
         end_time: formatDateTime(formData.end_time),
       })
       if (res.code === 201 || res.code === 200) {
+        const activityId = res.data.id
+        if (activityMaterials.length > 0) {
+          await Promise.all(
+            activityMaterials.map((am) =>
+              createActivityMaterial({
+                activity_id: activityId,
+                material_id: am.material_id,
+                quantity_per_child: am.quantity_per_child,
+                notes: am.notes,
+              })
+            )
+          )
+        }
         showMessage('success', '创建成功')
         setTimeout(() => {
-          navigate(`/activities/${res.data.id}`)
+          navigate(`/activities/${activityId}`)
         }, 1000)
       } else {
         showMessage('error', res.message || '创建失败')
@@ -258,6 +325,95 @@ export default function ActivityCreate() {
               value={formData.material_description}
               onChange={handleChange}
             />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">活动材料</label>
+            {materials.length === 0 ? (
+              <p style={{ color: '#999', fontSize: '14px' }}>
+                暂无材料，请到「材料库存」页面先添加材料
+              </p>
+            ) : (
+              <>
+                <div className="form-row" style={{ alignItems: 'flex-end' }}>
+                  <div className="form-group" style={{ flex: 2 }}>
+                    <select
+                      className="form-select"
+                      value={selectedMaterialId}
+                      onChange={(e) => setSelectedMaterialId(e.target.value)}
+                    >
+                      <option value="">选择材料</option>
+                      {materials.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}（库存：{m.quantity} {m.unit}）
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <input
+                      type="number"
+                      className="form-input"
+                      placeholder="每人用量"
+                      min="1"
+                      value={quantityPerChild}
+                      onChange={(e) => setQuantityPerChild(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group" style={{ flex: 2 }}>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="备注（可选）"
+                      value={materialNotes}
+                      onChange={(e) => setMaterialNotes(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <button
+                      type="button"
+                      className="btn btn-default"
+                      onClick={handleAddMaterial}
+                    >
+                      + 添加
+                    </button>
+                  </div>
+                </div>
+
+                {activityMaterials.length > 0 && (
+                  <table className="table" style={{ marginTop: '12px' }}>
+                    <thead>
+                      <tr>
+                        <th>材料名称</th>
+                        <th>每人用量</th>
+                        <th>库存</th>
+                        <th>备注</th>
+                        <th>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activityMaterials.map((am) => (
+                        <tr key={am.material_id}>
+                          <td>{am.material?.name}</td>
+                          <td>{am.quantity_per_child} {am.material?.unit}</td>
+                          <td>{am.material?.quantity} {am.material?.unit}</td>
+                          <td>{am.notes || '-'}</td>
+                          <td>
+                            <button
+                              type="button"
+                              className="btn btn-danger btn-sm"
+                              onClick={() => handleRemoveMaterial(am.material_id)}
+                            >
+                              移除
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </>
+            )}
           </div>
 
           <div className="form-actions">
